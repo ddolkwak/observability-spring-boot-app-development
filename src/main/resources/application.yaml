@@ -15,7 +15,9 @@ spring:
 
   # Flyway Configuration
   flyway:
-    enabled: false
+    enabled: true
+    connect-retries: 10
+    connect-retries-interval: 5s
 
   # JPA Configuration
   jpa:
