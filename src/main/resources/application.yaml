@@ -9,6 +9,16 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
+    hikari:
+      initializationFailTimeout: 60000   # Wait DB Configuration for 60s
+      connectionTimeout: 30000           # Connection Timeout
+
+  # Flyway Configuration
+  flyway:
+    enabled: true
+    connect-retries: 10
+    connect-retries-interval: 5s
+
   # JPA Configuration
   jpa:
     hibernate:
