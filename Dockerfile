@@ -20,6 +20,6 @@ RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 
 COPY --chown=spring:spring agent/opentelemetry-javaagent.jar /app/opentelemetry-javaagent.jar
-COPY --chown=spring:spring --from=builder /app/build/libs/*-SNAPSHOT.jar app.jar
+COPY --chown=spring:spring --from=builder /app/build/libs/spring-app.jar app.jar
 
-ENTRYPOINT ["java", "-javaagent:/app/opentelemetry-javaagent.jar", "-Xmx256m", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-javaagent:/app/opentelemetry-javaagent.jar", "-jar", "app.jar"]
