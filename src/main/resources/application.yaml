@@ -41,7 +41,7 @@ management:
   otlp:
     metrics:
       export:
-        url: http://${OTEL_COLLECTOR_HOST:localhost}:4318/v1/metrics
+        url: http://otel-collector.otel-system.svc.cluster.local:4318/v1/metrics
         step: 15s  # Collect Metrics for 15s (CPU/NW Load Management)
 
 server:
