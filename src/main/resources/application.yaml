@@ -34,7 +34,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, metrics # Enable Browser/K8s Access to /actuator/health
+        include: health, metrics, conditions, beans
   metrics:
     tags:
       application: ${spring.application.name}
