@@ -38,6 +38,9 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
+  observations:
+    annotations:
+      enabled: true
   otlp:
     metrics:
       export:
