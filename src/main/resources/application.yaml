@@ -41,11 +41,6 @@ management:
   observations:
     annotations:
       enabled: true
-  otlp:
-    metrics:
-      export:
-        url: http://otel-collector.otel-system.svc.cluster.local:4318/v1/metrics
-        step: 15s  # Collect Metrics for 15s (CPU/NW Load Management)
 
 server:
   shutdown: graceful
