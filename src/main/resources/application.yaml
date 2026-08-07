@@ -41,6 +41,9 @@ management:
   observations:
     annotations:
       enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
 
 server:
   shutdown: graceful

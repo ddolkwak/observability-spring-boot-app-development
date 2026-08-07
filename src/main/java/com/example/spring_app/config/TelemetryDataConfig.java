@@ -5,11 +5,13 @@ import io.micrometer.registry.otlp.OtlpMeterRegistry;
 import io.micrometer.core.instrument.Clock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.Duration;
 
 @Configuration
-public class OtlpMetricsConfig {
+public class TelemetryDataConfig {
 
     @Bean
     public OtlpConfig otlpConfig() {
@@ -34,5 +36,13 @@ public class OtlpMetricsConfig {
     @Bean
     public OtlpMeterRegistry otlpMeterRegistry(OtlpConfig otlpConfig) {
         return new OtlpMeterRegistry(otlpConfig, Clock.SYSTEM);
+    }
+    @Bean
+    public OtlpHttpSpanExporter otlpHttpSpanExporter(
+            @Value("${otel.exporter.endpoint:http://otel-collector.otel-system.svc.cluster.local:4318/v1/traces}") String endpoint) {
+        
+        return OtlpHttpSpanExporter.builder()
+                .setEndpoint(endpoint)
+                .build();
     }
 }
