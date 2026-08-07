@@ -37,12 +37,15 @@ public class TelemetryDataConfig {
     public OtlpMeterRegistry otlpMeterRegistry(OtlpConfig otlpConfig) {
         return new OtlpMeterRegistry(otlpConfig, Clock.SYSTEM);
     }
+
     @Bean
     public OtlpHttpSpanExporter otlpHttpSpanExporter(
             @Value("${otel.exporter.endpoint:http://otel-collector.otel-system.svc.cluster.local:4318/v1/traces}") String endpoint) {
         
         return OtlpHttpSpanExporter.builder()
                 .setEndpoint(endpoint)
+                .setTimeout(Duration.ofSeconds(5))
+                .setCompression("gzip")
                 .build();
     }
 }
