@@ -6,7 +6,6 @@ import io.micrometer.core.instrument.Clock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.time.Duration;
 
@@ -23,7 +22,7 @@ public class TelemetryDataConfig {
 
             @Override
             public String url() {
-                return "http://otel-collector.otel-system.svc.cluster.local:4318/v1/metrics";
+                return "http://otel-collector-service.otel-system.svc.cluster.local:4318/v1/metrics";
             }
 
             @Override
@@ -39,11 +38,9 @@ public class TelemetryDataConfig {
     }
 
     @Bean
-    public OtlpHttpSpanExporter otlpHttpSpanExporter(
-            @Value("${otel.exporter.endpoint:http://otel-collector.otel-system.svc.cluster.local:4318/v1/traces}") String endpoint) {
-        
+    public OtlpHttpSpanExporter otlpHttpSpanExporter() {
         return OtlpHttpSpanExporter.builder()
-                .setEndpoint(endpoint)
+                .setEndpoint("http://otel-collector-service.otel-system.svc.cluster.local:4318/v1/traces")
                 .setTimeout(Duration.ofSeconds(5))
                 .setCompression("gzip")
                 .build();
