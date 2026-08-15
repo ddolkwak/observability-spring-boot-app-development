@@ -34,10 +34,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, metrics, conditions, beans
-  metrics:
-    tags:
-      application: ${spring.application.name}
+        include: health
   observations:
     annotations:
       enabled: true

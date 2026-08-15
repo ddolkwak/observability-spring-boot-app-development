@@ -6,14 +6,21 @@ import io.micrometer.core.instrument.Clock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 @Configuration
 public class TelemetryDataConfig {
 
     @Bean
-    public OtlpConfig otlpConfig() {
+    public OtlpConfig otlpConfig(
+            @Value("${spring.application.name}") String appName,
+            @Value("${POD_NAME:unknown}") String podName,
+            @Value("${POD_IP:unknown}") String podIp) {
+
         return new OtlpConfig() {
             @Override
             public String get(String key) {
@@ -27,7 +34,16 @@ public class TelemetryDataConfig {
 
             @Override
             public Duration step() {
-                return Duration.ofSeconds(15);
+                return Duration.ofSeconds(30);
+            }
+
+            @Override
+            public Map<String, String> resourceAttributes() {
+                Map<String, String> attributes = new HashMap<>();
+                attributes.put("service.name", appName);
+                attributes.put("k8s.pod.name", podName);
+                attributes.put("k8s.pod.ip", podIp);
+                return attributes;
             }
         };
     }
