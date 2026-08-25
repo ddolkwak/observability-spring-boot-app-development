@@ -10,8 +10,8 @@ spring:
     driver-class-name: org.postgresql.Driver
 
     hikari:
-      initializationFailTimeout: 60000   # Wait DB Configuration for 60s
-      connectionTimeout: 30000           # Connection Timeout
+      initialization-fail-timeout: 60000   # Wait DB Configuration for 60s
+      connection-timeout: 30000           # Connection Timeout
 
   # Flyway Configuration
   flyway:
@@ -34,13 +34,38 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
-  observations:
-    annotations:
-      enabled: true
+        include: health, info, metrics, prometheus
+  metrics:
+    distribution:
+      percentiles:
+        http.server.requests: 0.5, 0.9, 0.95, 0.99
+      percentiles-histogram:
+        http.server.requests: true
+  otlp:
+    metrics:
+      export:
+        enabled: true
+        url: http://otel-collector-service.otel-system.svc.cluster.local:4318/v1/metrics
+        step: 30s
+        compression-mode: gzip
   tracing:
     sampling:
       probability: 1.0
+    exemplars:
+      include: sampled-traces
+  opentelemetry:
+    enabled: true
+    resource-attributes:
+      service.name: spring-app
+      service.version: 2.0.0
+      k8s.pod.name: ${POD_NAME}
+      k8s.pod.ip: ${POD_IP}
+    tracing:
+      export:
+        otlp:
+          endpoint: http://otel-collector-service.otel-system.svc.cluster.local:4318/v1/traces
+          transport: http
+          compression: gzip
 
 logging:
   pattern:
