@@ -10,8 +10,8 @@ spring:
     driver-class-name: org.postgresql.Driver
 
     hikari:
-      initializationFailTimeout: 60000   # Wait DB Configuration for 60s
-      connectionTimeout: 30000           # Connection Timeout
+      initialization-fail-timeout: 60000   # Wait DB Configuration for 60s
+      connection-timeout: 30000           # Connection Timeout
 
   # Flyway Configuration
   flyway:
