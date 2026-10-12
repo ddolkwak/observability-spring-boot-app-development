@@ -73,3 +73,7 @@ logging:
 
 server:
   shutdown: graceful
+
+traffic:
+  experiments:
+    full-scan-enabled: false
