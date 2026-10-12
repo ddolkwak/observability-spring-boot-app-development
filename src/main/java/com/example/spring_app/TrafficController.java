@@ -1,41 +1,39 @@
 package com.example.spring_app;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
+@RequestMapping("/api/traffic")
 public class TrafficController {
+    private final TrafficService service;
 
-    private static final Logger log = LoggerFactory.getLogger(TrafficController.class);
-
-    private final TrafficDataRepository repository;
-
-    public TrafficController(TrafficDataRepository repository) {
-        this.repository = repository;
+    public TrafficController(TrafficService service) {
+        this.service = service;
     }
 
-    @GetMapping("/api/generate-insert")
-    public String generateInsertTraffic(HttpServletRequest request) {
-        String ip = request.getRemoteAddr();
-        
-        log.info("Generating INSERT traffic");
-
-        TrafficData savedData = repository.save(new TrafficData("Test traffic generated.", ip));
-        
-        return "DB Insert Completed. ID: " + savedData.getId();
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<TrafficResponse> create(
+            @Valid @RequestBody CreateTrafficRequest body,
+            HttpServletRequest request) {
+        var response = service.createTraffic(body.message(), request.getRemoteAddr());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/api/generate-select")
-    public String generateSelectTraffic() {
-        log.info("Generating SELECT traffic");
-
-        List<TrafficData> allData = repository.findAll();
-        
-        return "DB Select Completed. Current Stored Data: " + allData.size();
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public TrafficSliceResponse read(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
+        return service.readTraffic(page, size);
     }
 }
