@@ -27,16 +27,14 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(InvalidTrafficQueryException.class)
     public @Nullable ResponseEntity<Object> handleInvalidQuery(
             InvalidTrafficQueryException ex, WebRequest request) {
-        return handleExceptionInternal(
-                ex, null, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+        return handleExceptionInternal(ex, null, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
     }
 
     @ExceptionHandler(Exception.class)
     public @Nullable ResponseEntity<Object> handleUnexpected(
             Exception ex, WebRequest request) {
         log.error("Unexpected traffic API failure", ex);
-        return handleExceptionInternal(
-                ex, null, new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR, request);
+        return handleExceptionInternal(ex, null, new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
 
     @Override
@@ -46,14 +44,12 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             HttpHeaders headers,
             HttpStatusCode statusCode,
             WebRequest request) {
-        var problem = ProblemDetail.forStatusAndDetail(
-                statusCode, publicDetail(statusCode.value()));
+        var problem = ProblemDetail.forStatusAndDetail(statusCode, publicDetail(statusCode.value()));
         problem.setProperty("code", errorCode(ex, statusCode.value()));
         problem.setProperty("errors", fieldErrors(ex, statusCode));
 
         if (request instanceof ServletWebRequest servletRequest) {
-            problem.setInstance(URI.create(
-                    servletRequest.getRequest().getRequestURI()));
+            problem.setInstance(URI.create(servletRequest.getRequest().getRequestURI()));
         }
 
         // Preserve status and headers, including Allow for HTTP 405.
@@ -68,15 +64,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         }
         if (ex instanceof MethodArgumentNotValidException validation) {
             return validation.getBindingResult().getFieldErrors().stream()
-                    .map(error -> Map.of(
-                            "field", error.getField(),
-                            "message", error.getDefaultMessage() == null
-                                    ? "Invalid value" : error.getDefaultMessage()))
+                    .map(error -> Map.of("field", error.getField(), "message", error.getDefaultMessage() == null ? "Invalid value" : error.getDefaultMessage()))
                     .toList();
         }
         if (ex instanceof InvalidTrafficQueryException query) {
-            return List.of(Map.of(
-                    "field", query.getField(), "message", query.getMessage()));
+            return List.of(Map.of("field", query.getField(), "message", query.getMessage()));
         }
         return List.of();
     }
@@ -85,8 +77,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         if (status >= 500) {
             return "INTERNAL_ERROR";
         }
-        if (ex instanceof MethodArgumentNotValidException
-                || ex instanceof InvalidTrafficQueryException) {
+        if (ex instanceof MethodArgumentNotValidException || ex instanceof InvalidTrafficQueryException) {
             return "VALIDATION_ERROR";
         }
         if (ex instanceof HttpMessageNotReadableException) {
