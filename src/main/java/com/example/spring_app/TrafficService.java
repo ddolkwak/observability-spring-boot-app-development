@@ -29,13 +29,11 @@ public class TrafficService {
                 .map(TrafficResponse::from)
                 .toList();
 
-        return new TrafficSliceResponse(
-                items, page, size, slice.getNumberOfElements(), slice.hasNext());
+        return new TrafficSliceResponse(items, page, size, slice.getNumberOfElements(), slice.hasNext());
     }
 
     @Transactional(readOnly = true)
     public FullScanResponse readAllForExperiment() {
-        // Intentionally materialize the entire table for this explicit experiment.
         var records = repository.findAll();
         return new FullScanResponse("full-table-read", records.size());
     }
@@ -46,13 +44,11 @@ public class TrafficService {
                     "page", "page must be greater than or equal to 0");
         }
         if (size < 1 || size > MAX_PAGE_SIZE) {
-            throw new InvalidTrafficQueryException(
-                    "size", "size must be between 1 and " + MAX_PAGE_SIZE);
+            throw new InvalidTrafficQueryException("size", "size must be between 1 and " + MAX_PAGE_SIZE);
         }
         // JPA's first-result offset is an int. Reject unsupported deep offsets.
         if ((long) page * size > Integer.MAX_VALUE) {
-            throw new InvalidTrafficQueryException(
-                    "page", "page * size must not exceed " + Integer.MAX_VALUE);
+            throw new InvalidTrafficQueryException("page", "page * size must not exceed " + Integer.MAX_VALUE);
         }
     }
 }
