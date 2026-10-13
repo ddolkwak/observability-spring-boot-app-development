@@ -1,0 +1,45 @@
+spring:
+  datasource:
+    url: "${SPRING_DATASOURCE_URL}"
+    username: "${SPRING_DATASOURCE_USERNAME}"
+    password: "${SPRING_DATASOURCE_PASSWORD}"
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate.session_factory.statement_inspector: com.example.spring_app.SqlCaptureInspector
+      hibernate.generate_statistics: true
+
+  sql:
+    init:
+      mode: never
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+
+traffic:
+  experiments:
+    full-scan-enabled: false
+
+management:
+  tracing:
+    export:
+      otlp:
+        enabled: false
+
+  otlp:
+    metrics:
+      export:
+        enabled: false
+
+  opentelemetry:
+    resource-attributes:
+      k8s.pod.name: local-test
+      k8s.pod.ip: "127.0.0.1"
+
+logging:
+  level:
+    org.hibernate.engine.internal.StatisticalLoggingSessionEventListener: "OFF"
