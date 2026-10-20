@@ -45,6 +45,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatusCode statusCode,
             WebRequest request) {
         var problem = ProblemDetail.forStatusAndDetail(statusCode, publicDetail(statusCode.value()));
+        problem.setType(URI.create("about:blank"));
         problem.setProperty("code", errorCode(ex, statusCode.value()));
         problem.setProperty("errors", fieldErrors(ex, statusCode));
 
