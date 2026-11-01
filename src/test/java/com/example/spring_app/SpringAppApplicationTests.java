@@ -1,5 +1,7 @@
 package com.example.spring_app;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -28,6 +30,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -260,6 +263,124 @@ class SpringAppApplicationTests {
         assertThat(recordCount()).isEqualTo(3L);
     }
 
+    @Test
+    void testRunIdAndDatabaseGeneratedTimeRoundTripThroughCreateStorageAndRead() throws Exception {
+        String runId = "Run-A_2026.10-29";
+        String body = mvc.perform(post("/api/traffic")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"metadata-test\",\"testRunId\":\"" + runId + "\"}")
+                        .with(request -> {
+                            request.setRemoteAddr("192.0.2.10");
+                            return request;
+                        }))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.message").value("metadata-test"))
+                .andExpect(jsonPath("$.clientIp").value("192.0.2.10"))
+                .andExpect(jsonPath("$.testRunId").value(runId))
+                .andExpect(jsonPath("$.createdAt").isString())
+                .andReturn().getResponse().getContentAsString();
+
+        Number responseId = JsonPath.read(body, "$.id");
+        long id = responseId.longValue();
+        String createdAtText = JsonPath.read(body, "$.createdAt");
+        String utcMicrosecondPattern =
+                "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{6}Z";
+        assertThat(createdAtText).matches(utcMicrosecondPattern);
+        Instant createdAt = Instant.parse(createdAtText);
+        Instant storedCreatedAt = jdbc.queryForObject(
+                "select created_at from traffic_data where id = ?",
+                (result, row) -> result.getObject(1, OffsetDateTime.class).toInstant(), id);
+
+        assertThat(jdbc.queryForObject(
+                "select test_run_id from traffic_data where id = ?", String.class, id))
+                .isEqualTo(runId);
+        assertThat(createdAt).isEqualTo(storedCreatedAt);
+
+        String readBody = mvc.perform(get("/api/traffic"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(id))
+                .andExpect(jsonPath("$.items[0].testRunId").value(runId))
+                .andExpect(jsonPath("$.items[0].createdAt").isString())
+                .andReturn().getResponse().getContentAsString();
+        String readCreatedAtText = JsonPath.read(readBody, "$.items[0].createdAt");
+        assertThat(readCreatedAtText).matches(utcMicrosecondPattern);
+        assertThat(Instant.parse(readCreatedAtText)).isEqualTo(storedCreatedAt);
+    }
+
+    static Stream<String> optionalRunIdRequests() {
+        return Stream.of(
+                "{\"message\":\"optional-run\"}",
+                "{\"message\":\"optional-run\",\"testRunId\":null}");
+    }
+
+    @ParameterizedTest
+    @MethodSource("optionalRunIdRequests")
+    void omittedOrNullRunIdPreservesTheOriginalCreationContract(String requestBody) throws Exception {
+        mvc.perform(post("/api/traffic")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.testRunId").hasJsonPath())
+                .andExpect(jsonPath("$.testRunId").value(nullValue()))
+                .andExpect(jsonPath("$.createdAt").isString());
+
+        assertThat(recordCount()).isEqualTo(1L);
+        assertThat(jdbc.queryForObject("select test_run_id from traffic_data", String.class)).isNull();
+        assertThat(jdbc.queryForObject(
+                "select created_at is not null from traffic_data", Boolean.class)).isTrue();
+    }
+
+    @Test
+    void acceptsAMaximumLengthTestRunIdWithoutTruncation() throws Exception {
+        String runId = "A" + "x".repeat(127);
+        mvc.perform(post("/api/traffic")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"maximum-run-id\",\"testRunId\":\"" + runId + "\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.testRunId").value(runId));
+
+        assertThat(jdbc.queryForObject("select test_run_id from traffic_data", String.class))
+                .isEqualTo(runId);
+    }
+
+    static Stream<String> invalidMetadataRunIds() {
+        return Stream.of("", " ", "run A", "run/A", "-run", "_run", ".run",
+                "runé", "a".repeat(129), " run-A", "run-A ");
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidMetadataRunIds")
+    void rejectsAnInvalidMetadataRunIdWithoutWriting(String runId) throws Exception {
+        expectProblem(mvc.perform(post("/api/traffic")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"invalid-run-id\",\"testRunId\":\"" + runId + "\"}")),
+                400, "VALIDATION_ERROR")
+                .andExpect(jsonPath("$.errors[0].field").value("testRunId"));
+
+        assertThat(SqlCaptureInspector.statements()).isEmpty();
+        assertThat(recordCount()).isZero();
+    }
+
+    @Test
+    void readsLegacyNullMetadataAsExplicitJsonNullWithoutChangingTheRecord() throws Exception {
+        jdbc.update("""
+                insert into traffic_data (message, client_ip, test_run_id, created_at)
+                values ('legacy-record', '127.0.0.1', null, null)
+                """);
+
+        mvc.perform(get("/api/traffic"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].message").value("legacy-record"))
+                .andExpect(jsonPath("$.items[0].clientIp").value("127.0.0.1"))
+                .andExpect(jsonPath("$.items[0].testRunId").hasJsonPath())
+                .andExpect(jsonPath("$.items[0].testRunId").value(nullValue()))
+                .andExpect(jsonPath("$.items[0].createdAt").hasJsonPath())
+                .andExpect(jsonPath("$.items[0].createdAt").value(nullValue()));
+
+        assertThat(jdbc.queryForObject("select created_at from traffic_data", Object.class)).isNull();
+        assertThat(recordCount()).isEqualTo(1L);
+    }
+
     private ResultActions expectProblem(
             ResultActions result, int expectedStatus, String expectedCode) throws Exception {
         result.andExpect(status().is(expectedStatus))
@@ -305,7 +426,6 @@ class SpringAppApplicationTests {
         assertThat(statements).noneMatch(sql -> COUNT_QUERY.matcher(sql).find());
         assertThat(statements).anyMatch(sql ->
             sql.contains(" from traffic_data ") &&
-                (sql.contains(" limit ") || sql.contains(" fetch first ") ||
-                 sql.contains(" fetch next ")));
+                (sql.contains(" limit ") || sql.contains(" fetch first ") || sql.contains(" fetch next ")));
     }
 }
