@@ -77,3 +77,4 @@ server:
 traffic:
   experiments:
     full-scan-enabled: false
+    cleanup-enabled: false

@@ -16,6 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -81,5 +82,20 @@ class FullScanEnabledTests {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.experiment").value("full-table-read"))
             .andExpect(jsonPath("$.recordsRead").value(0));
+    }
+
+    @Test
+    void enablingFullScanDoesNotEnableCleanup() throws Exception {
+        jdbc.update("""
+                insert into traffic_data (message, client_ip, test_run_id)
+                values ('preserved', '127.0.0.1', 'run-A')
+                """);
+        SqlCaptureInspector.clear();
+
+        mvc.perform(delete("/api/experiments/traffic").param("testRunId", "run-A"))
+                .andExpect(status().isNotFound());
+        assertThat(SqlCaptureInspector.statements()).isEmpty();
+        assertThat(jdbc.queryForObject("select count(*) from traffic_data", Long.class))
+                .isEqualTo(1L);
     }
 }

@@ -29,7 +29,8 @@ public class TrafficController {
     public ResponseEntity<TrafficResponse> create(
             @Valid @RequestBody CreateTrafficRequest body,
             HttpServletRequest request) {
-        var response = service.createTraffic(body.message(), request.getRemoteAddr());
+        var response = service.createTraffic(
+                body.message(), request.getRemoteAddr(), body.testRunId());
         log.info("Created traffic record id={}", response.id());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

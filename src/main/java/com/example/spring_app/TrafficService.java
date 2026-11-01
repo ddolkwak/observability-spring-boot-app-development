@@ -15,8 +15,9 @@ public class TrafficService {
     }
 
     @Transactional
-    public TrafficResponse createTraffic(String message, String clientIp) {
-        TrafficData saved = repository.save(new TrafficData(message, clientIp));
+    public TrafficResponse createTraffic(
+            String message, String clientIp, String testRunId) {
+        TrafficData saved = repository.save(new TrafficData(message, clientIp, testRunId));
         return TrafficResponse.from(saved);
     }
 
@@ -36,6 +37,12 @@ public class TrafficService {
     public FullScanResponse readAllForExperiment() {
         var records = repository.findAll();
         return new FullScanResponse("full-table-read", records.size());
+    }
+
+    @Transactional
+    public TrafficCleanupResponse cleanupTraffic(String testRunId) {
+        int deletedCount = repository.deleteForTestRunId(testRunId);
+        return new TrafficCleanupResponse(testRunId, deletedCount);
     }
 
     private static void validateQuery(int page, int size) {
