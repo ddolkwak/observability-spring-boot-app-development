@@ -233,11 +233,12 @@ class TrafficServiceObservationTests {
         mvc().perform(get("/api/traffic")).andExpect(status().isOk());
 
         registry.assertThat()
-                .hasNumberOfObservationsEqualTo(2)
-                .hasNumberOfObservationsWithNameEqualTo(HTTP_NAME, 1)
-                .hasNumberOfObservationsWithNameEqualTo(NAME, 1)
-                .forAllObservationsWithNameEqualTo(NAME,
-                        context -> context.hasParentObservationContextMatching(parent -> HTTP_NAME.equals(parent.getName())));
+        .hasNumberOfObservationsEqualTo(2)
+        .hasNumberOfObservationsWithNameEqualTo(HTTP_NAME, 1)
+        .hasNumberOfObservationsWithNameEqualTo(NAME, 1)
+        .hasObservationWithNameEqualTo(NAME)
+        .that()
+        .hasParentObservationContextMatching(parent -> HTTP_NAME.equals(parent.getName()));
     }
 
     @ParameterizedTest
