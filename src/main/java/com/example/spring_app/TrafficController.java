@@ -29,18 +29,38 @@ public class TrafficController {
     public ResponseEntity<TrafficResponse> create(
             @Valid @RequestBody CreateTrafficRequest body,
             HttpServletRequest request) {
+        request.setAttribute(ApiExceptionHandler.OPERATION_ATTRIBUTE, "create");
+        request.setAttribute(ApiExceptionHandler.TEST_RUN_ID_ATTRIBUTE, body.testRunId());
         var response = service.createTraffic(
                 body.message(), request.getRemoteAddr(), body.testRunId());
-        log.info("Created traffic record id={}", response.id());
+        request.removeAttribute(ApiExceptionHandler.OPERATION_ATTRIBUTE);
+        request.removeAttribute(ApiExceptionHandler.TEST_RUN_ID_ATTRIBUTE);
+        log.atInfo()
+                .addKeyValue("operation", "create")
+                .addKeyValue("result", "success")
+                .addKeyValue("testRunId", response.testRunId())
+                .addKeyValue("recordId", response.id().toString())
+                .log("Traffic operation completed");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public TrafficSliceResponse read(
             @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "20") int size) {
+            @RequestParam(name = "size", defaultValue = "20") int size,
+            HttpServletRequest request) {
+        request.setAttribute(ApiExceptionHandler.OPERATION_ATTRIBUTE, "read-page");
         var response = service.readTraffic(page, size);
-        log.info("Read traffic page={} size={} returned={} hasNext={}", page, size, response.numberOfElements(), response.hasNext());
+        request.removeAttribute(ApiExceptionHandler.OPERATION_ATTRIBUTE);
+        log.atInfo()
+                .addKeyValue("operation", "read-page")
+                .addKeyValue("result", "success")
+                .addKeyValue("testRunId", (Object) null)
+                .addKeyValue("returnedRows", response.numberOfElements())
+                .addKeyValue("page", page)
+                .addKeyValue("size", size)
+                .addKeyValue("hasNext", response.hasNext())
+                .log("Traffic operation completed");
         return response;
     }
 }
