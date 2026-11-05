@@ -67,9 +67,19 @@ management:
           transport: http
           compression: gzip
 
+jdbc:
+  includes: [QUERY]
+  datasource-proxy:
+    include-parameter-values: false
+    query:
+      enable-logging: false
+    slow-query:
+      enable-logging: false
+
 logging:
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - [traceId=%X{traceId:-},spanId=%X{spanId:-}] %m%n"
+  structured:
+    format:
+      console: logstash
 
 server:
   shutdown: graceful
